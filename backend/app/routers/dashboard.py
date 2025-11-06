@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from Base import Course, User, UserRole, Submission, Assignment
+from Base import Course, User, UserRole, Submission, Assignment,LearnerProgress
 
 router = APIRouter()
 
@@ -121,3 +121,62 @@ def get_pending_evaluations(db: Session = Depends(get_db)):
         })
 
     return evaluations
+
+
+@router.get("/insights")
+def get_dashboard_insights(db: Session = Depends(get_db)):
+    """
+    Dashboard Insights API:
+    - Monthly progressData for all learners
+    - Course-wise engagementData
+    """
+
+    # ✅ Fetch students
+    learners = db.query(User).filter(User.role == "student").all()
+    learner_progress = db.query(LearnerProgress).all()
+
+    # ✅ Fetch courses
+    courses = db.query(Course).filter(Course.publish_status == "published").all()
+
+    # ---------------------------------------------------
+    # 📌 1) PROGRESS DATA (Monthly Overview)
+    # ---------------------------------------------------
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    progressData = []
+
+    for month in months:
+        data_row = {"month": month}
+
+        for learner in learners:
+
+            # Get learner progress record
+            prog = next(
+                (p.progress_percent for p in learner_progress if p.learner_id == learner.id),
+                0
+            )
+
+            # Use first name as graph key
+            key = learner.first_name.lower()
+
+            data_row[key] = prog
+
+        progressData.append(data_row)
+
+    # ---------------------------------------------------
+    # 📌 2) ENGAGEMENT DATA (Course Activity)
+    # ---------------------------------------------------
+    engagementData = []
+
+    for course in courses:
+        total_students = len(course.students)
+
+        engagementData.append({
+            "course": course.title,
+            "timeSpent": total_students * 12,       # dummy logic
+            "interactions": total_students * 5      # dummy logic
+        })
+
+    return {
+        "progressData": progressData,
+        "engagementData": engagementData
+    }
