@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+python-dotenv
+pydantic
+minio
+openai-whisper
+requests
+
+pypdf2
+openai
+python-dotenv
+google-generativeai
+PyPDF2
+python-docx
